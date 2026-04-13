@@ -1,6 +1,51 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { rankCandidates, RankedCandidate, RankResponse } from "../api";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  rankCandidates,
+  getCandidates,
+  RankedCandidate,
+  RankResponse,
+} from "../api";
+
+// Show "processing" banner for this many ms after the last count change
+const PROCESSING_LINGER_MS = 15_000;
+
+function useProcessingState() {
+  const { data } = useQuery({
+    queryKey: ["candidates"],
+    queryFn: getCandidates,
+    refetchInterval: 4_000,
+  });
+
+  const total = data?.total ?? 0;
+  const prevTotalRef = useRef(total);
+  const lastChangedRef = useRef<number | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    if (total !== prevTotalRef.current) {
+      prevTotalRef.current = total;
+      lastChangedRef.current = Date.now();
+      setIsProcessing(true);
+    }
+  }, [total]);
+
+  // Clear banner once linger window expires
+  useEffect(() => {
+    if (!isProcessing) return;
+    const id = setTimeout(() => {
+      if (
+        lastChangedRef.current &&
+        Date.now() - lastChangedRef.current >= PROCESSING_LINGER_MS
+      ) {
+        setIsProcessing(false);
+      }
+    }, PROCESSING_LINGER_MS);
+    return () => clearTimeout(id);
+  }, [isProcessing, total]);
+
+  return { total, isProcessing };
+}
 
 function ScoreBadge({ score }: { score: number }) {
   const cls =
@@ -73,6 +118,7 @@ function CandidateCard({ candidate: c }: { candidate: RankedCandidate }) {
 export function RankPage() {
   const [jdText, setJdText] = useState("");
   const [topK, setTopK] = useState(10);
+  const { total, isProcessing } = useProcessingState();
 
   const { mutate, data, isPending, error, reset } = useMutation<
     RankResponse,
@@ -94,6 +140,29 @@ export function RankPage() {
 
   return (
     <div className="space-y-6">
+      {/* Pipeline indicator */}
+      {isProcessing ? (
+        <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+          <span>
+            <span className="font-medium">Pipeline active</span> — resumes are
+            still being processed. Results may be incomplete until ingestion
+            finishes.
+            {total > 0 && (
+              <span className="ml-1 text-amber-600">
+                ({total} indexed so far)
+              </span>
+            )}
+          </span>
+        </div>
+      ) : total > 0 ? (
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <span className="w-2 h-2 bg-green-400 rounded-full shrink-0" />
+          {total} candidate{total !== 1 ? "s" : ""} indexed — pipeline idle,
+          ready to rank.
+        </div>
+      ) : null}
+
       {/* JD Input */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -136,13 +205,25 @@ export function RankPage() {
           <button
             onClick={handleSubmit}
             disabled={!jdText.trim() || isPending}
-            className="px-6 py-2 bg-indigo-600 text-white text-sm rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title={
+              isProcessing
+                ? "Pipeline still active — results may be incomplete"
+                : undefined
+            }
+            className={[
+              "px-6 py-2 text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+              isProcessing
+                ? "bg-amber-500 hover:bg-amber-600 text-white"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white",
+            ].join(" ")}
           >
             {isPending ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Ranking…
               </span>
+            ) : isProcessing ? (
+              "Rank (pipeline active ⚠)"
             ) : (
               "Find Top Candidates"
             )}
