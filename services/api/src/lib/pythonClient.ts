@@ -35,6 +35,11 @@ export async function rankCandidates(req: RankRequest): Promise<RankResponse> {
   return data;
 }
 
+export async function getCandidates(): Promise<unknown> {
+  const { data } = await client.get("/candidates");
+  return data;
+}
+
 export async function healthCheck(): Promise<boolean> {
   try {
     const { data } = await client.get("/health");

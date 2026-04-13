@@ -3,8 +3,25 @@ import { v4 as uuidv4 } from "uuid";
 import { upload } from "../middleware/upload";
 import { uploadToS3, BUCKET } from "../lib/s3";
 import { publishIngestMessage } from "../lib/sqs";
+import { getCandidates } from "../lib/pythonClient";
 
 const router = Router();
+
+/**
+ * GET /api/candidates
+ * Returns all ingested candidates (proxied from the Python processor).
+ */
+router.get(
+  "/",
+  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = await getCandidates();
+      res.json(data);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 /**
  * POST /api/candidates/upload
