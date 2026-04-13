@@ -6,12 +6,18 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
     <Link
       to={to}
-      className={[
-        "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-        isActive
-          ? "bg-indigo-50 text-indigo-700"
-          : "text-gray-500 hover:text-gray-800 hover:bg-gray-100",
-      ].join(" ")}
+      style={{
+        display: "inline-block",
+        fontFamily: "var(--font-mono)",
+        fontSize: "11px",
+        letterSpacing: "0.14em",
+        textTransform: "uppercase",
+        padding: "14px 0",
+        color: isActive ? "var(--accent)" : "var(--text-muted)",
+        borderBottom: `1px solid ${isActive ? "var(--accent)" : "transparent"}`,
+        textDecoration: "none",
+        transition: "color 0.2s, border-color 0.2s",
+      }}
     >
       {children}
     </Link>
@@ -20,25 +26,89 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
 
 export function Layout() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-bold text-gray-900 tracking-tight">
-              Talent Intelligence
-            </h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              AI-powered resume ranking engine
+    <div style={{ minHeight: "100vh" }}>
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: "var(--bg)",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <div style={{ maxWidth: "820px", margin: "0 auto", padding: "0 24px" }}>
+          {/* Masthead */}
+          <div
+            style={{
+              padding: "28px 0 20px",
+              borderBottom: "1px solid var(--border)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: "14px",
+              }}
+            >
+              <h1
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "36px",
+                  fontWeight: 300,
+                  fontStyle: "italic",
+                  letterSpacing: "0.01em",
+                  color: "var(--text)",
+                  lineHeight: 1,
+                  margin: 0,
+                }}
+              >
+                Talent Intelligence
+              </h1>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "9px",
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  color: "var(--accent)",
+                  border: "1px solid rgba(196, 148, 74, 0.4)",
+                  padding: "3px 7px",
+                  lineHeight: 1.4,
+                }}
+              >
+                AI
+              </span>
+            </div>
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.04em",
+                color: "var(--text-muted)",
+                marginTop: "8px",
+                marginBottom: 0,
+              }}
+            >
+              Resume ranking engine — vector search &amp; LLM scoring
             </p>
           </div>
-        </div>
-        <div className="max-w-3xl mx-auto px-4 pb-0 flex gap-1 border-t border-gray-100">
-          <NavLink to="/upload">Upload Resumes</NavLink>
-          <NavLink to="/rank">Rank Candidates</NavLink>
+
+          {/* Nav */}
+          <nav style={{ display: "flex", gap: "28px" }}>
+            <NavLink to="/upload">Upload Resumes</NavLink>
+            <NavLink to="/rank">Rank Candidates</NavLink>
+          </nav>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8">
+      <main
+        style={{
+          maxWidth: "820px",
+          margin: "0 auto",
+          padding: "48px 24px 80px",
+        }}
+      >
         <Outlet />
       </main>
     </div>

@@ -30,7 +30,6 @@ function useProcessingState() {
     }
   }, [total]);
 
-  // Clear banner once linger window expires
   useEffect(() => {
     if (!isProcessing) return;
     const id = setTimeout(() => {
@@ -47,68 +46,263 @@ function useProcessingState() {
   return { total, isProcessing };
 }
 
-function ScoreBadge({ score }: { score: number }) {
-  const cls =
-    score >= 75
-      ? "bg-green-100 text-green-800 border-green-200"
-      : score >= 50
-        ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-        : "bg-red-100 text-red-800 border-red-200";
+function ScoreRing({ score }: { score: number }) {
+  const color =
+    score >= 75 ? "var(--green)" : score >= 50 ? "var(--accent)" : "var(--red)";
+  const r = 22;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - score / 100);
+
   return (
-    <span
-      className={`inline-flex items-center justify-center w-14 h-14 rounded-full border-2 text-xl font-bold shrink-0 ${cls}`}
+    <div
+      style={{
+        position: "relative",
+        width: "56px",
+        height: "56px",
+        flexShrink: 0,
+      }}
     >
-      {score}
-    </span>
+      <svg
+        width="56"
+        height="56"
+        style={{ transform: "rotate(-90deg)", display: "block" }}
+      >
+        <circle
+          cx="28"
+          cy="28"
+          r={r}
+          fill="none"
+          stroke="var(--surface-2)"
+          strokeWidth="2"
+        />
+        <circle
+          cx="28"
+          cy="28"
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          strokeDasharray={circ}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.8s ease" }}
+        />
+      </svg>
+      <span
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "var(--font-mono)",
+          fontSize: "14px",
+          fontWeight: 500,
+          color: color,
+        }}
+      >
+        {score}
+      </span>
+    </div>
   );
 }
 
-function CandidateCard({ candidate: c }: { candidate: RankedCandidate }) {
+function CandidateCard({
+  candidate: c,
+  index,
+}: {
+  candidate: RankedCandidate;
+  index: number;
+}) {
+  const delayClass = `delay-${Math.min(index + 1, 5)}`;
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-      <div className="flex items-start gap-4">
-        <ScoreBadge score={c.score} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-              #{c.rank}
+    <div
+      className={`anim-fade-up ${delayClass}`}
+      style={{
+        background: "var(--surface)",
+        borderLeft: "2px solid var(--border)",
+        padding: "24px",
+        position: "relative",
+        overflow: "hidden",
+        transition: "border-left-color 0.2s",
+        marginBottom: "1px",
+      }}
+      onMouseOver={(e) =>
+        ((e.currentTarget as HTMLDivElement).style.borderLeftColor =
+          "var(--accent)")
+      }
+      onMouseOut={(e) =>
+        ((e.currentTarget as HTMLDivElement).style.borderLeftColor =
+          "var(--border)")
+      }
+    >
+      {/* Large ghost rank number */}
+      <span
+        style={{
+          position: "absolute",
+          top: "-6px",
+          right: "16px",
+          fontFamily: "var(--font-display)",
+          fontSize: "88px",
+          fontWeight: 300,
+          color: "rgba(255,255,255,0.025)",
+          lineHeight: 1,
+          userSelect: "none",
+          pointerEvents: "none",
+          letterSpacing: "-0.02em",
+        }}
+      >
+        {c.rank}
+      </span>
+
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
+        <ScoreRing score={c.score} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: "8px",
+              marginBottom: "3px",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "var(--accent)",
+                flexShrink: 0,
+              }}
+            >
+              #{String(c.rank).padStart(2, "0")}
             </span>
-            <h3 className="font-semibold text-gray-900 truncate">
-              {c.name ?? "Unknown"}
+            <h3
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "22px",
+                fontWeight: 400,
+                color: "var(--text)",
+                margin: 0,
+                lineHeight: 1.1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {c.name ?? "Unknown Candidate"}
             </h3>
           </div>
-          {c.email && <p className="text-sm text-gray-400">{c.email}</p>}
+          {c.email && (
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                color: "var(--text-muted)",
+                margin: 0,
+                letterSpacing: "0.02em",
+              }}
+            >
+              {c.email}
+            </p>
+          )}
         </div>
       </div>
 
-      <p className="text-sm text-gray-700 leading-relaxed">{c.reasoning}</p>
+      {/* Reasoning */}
+      <p
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "12px",
+          color: "var(--text-muted)",
+          lineHeight: 1.75,
+          margin: "16px 0",
+          borderLeft: "2px solid var(--border)",
+          paddingLeft: "14px",
+        }}
+      >
+        {c.reasoning}
+      </p>
 
+      {/* Matched skills */}
       {c.matched_skills.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {c.matched_skills.map((s) => (
-            <span
-              key={s}
-              className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full"
-            >
-              {s}
-            </span>
-          ))}
+        <div style={{ marginBottom: c.gaps.length > 0 ? "14px" : 0 }}>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "9px",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "var(--text-muted)",
+              margin: "0 0 7px",
+            }}
+          >
+            Matched
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {c.matched_skills.map((s) => (
+              <span
+                key={s}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "10px",
+                  color: "var(--green)",
+                  background: "var(--green-dim)",
+                  border: "1px solid rgba(77, 138, 95, 0.2)",
+                  padding: "2px 8px",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {s}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
+      {/* Gaps */}
       {c.gaps.length > 0 && (
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+        <div>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "9px",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "var(--text-muted)",
+              margin: "0 0 7px",
+            }}
+          >
             Gaps
           </p>
-          <ul className="space-y-0.5">
+          <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
             {c.gaps.map((g, i) => (
-              <li key={i} className="text-xs text-gray-500 flex gap-1.5">
-                <span className="text-gray-300 shrink-0">—</span>
+              <span
+                key={i}
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  color: "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <span
+                  style={{
+                    color: "var(--red)",
+                    fontSize: "10px",
+                    flexShrink: 0,
+                  }}
+                >
+                  —
+                </span>
                 {g}
-              </li>
+              </span>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>
@@ -139,55 +333,184 @@ export function RankPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Pipeline indicator */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "36px" }}>
+      {/* Section header */}
+      <div className="anim-fade-up">
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "28px",
+            fontWeight: 300,
+            fontStyle: "italic",
+            color: "var(--text)",
+            margin: "0 0 6px",
+            lineHeight: 1.2,
+          }}
+        >
+          Rank Candidates
+        </h2>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            letterSpacing: "0.04em",
+            color: "var(--text-muted)",
+            margin: 0,
+          }}
+        >
+          Paste a job description to surface and score your best-fit candidates
+        </p>
+      </div>
+
+      {/* Pipeline status */}
       {isProcessing ? (
-        <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            padding: "12px 16px",
+            background: "var(--amber-dim)",
+            border: "1px solid rgba(196, 148, 74, 0.18)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            color: "var(--accent)",
+          }}
+        >
+          <span
+            className="pulse-dot"
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: "var(--accent)",
+              flexShrink: 0,
+              display: "inline-block",
+            }}
+          />
           <span>
-            <span className="font-medium">Pipeline active</span> — resumes are
-            still being processed. Results may be incomplete until ingestion
-            finishes.
+            <strong>Pipeline active</strong> — resumes are still being
+            processed. Results may be incomplete.
             {total > 0 && (
-              <span className="ml-1 text-amber-600">
-                ({total} indexed so far)
+              <span style={{ color: "var(--text-muted)", marginLeft: "6px" }}>
+                {total} indexed so far.
               </span>
             )}
           </span>
         </div>
       ) : total > 0 ? (
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span className="w-2 h-2 bg-green-400 rounded-full shrink-0" />
-          {total} candidate{total !== 1 ? "s" : ""} indexed — pipeline idle,
-          ready to rank.
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            color: "var(--text-muted)",
+          }}
+        >
+          <span
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: "var(--green)",
+              flexShrink: 0,
+              display: "inline-block",
+            }}
+          />
+          {total} candidate{total !== 1 ? "s" : ""} indexed — ready to rank
         </div>
       ) : null}
 
-      {/* JD Input */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-gray-700">
+      {/* JD input area */}
+      <div
+        className="anim-fade-up delay-1"
+        style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <label
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "10px",
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "var(--text-muted)",
+            }}
+          >
             Job Description
           </label>
           {(jdText || data) && (
             <button
               onClick={handleClear}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              style={{
+                background: "none",
+                border: "none",
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--text-muted)",
+                cursor: "pointer",
+                transition: "color 0.15s",
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.color = "var(--text)")}
+              onMouseOut={(e) =>
+                (e.currentTarget.style.color = "var(--text-muted)")
+              }
             >
               Clear
             </button>
           )}
         </div>
+
         <textarea
           value={jdText}
           onChange={(e) => setJdText(e.target.value)}
-          placeholder="Paste the job description here — role, responsibilities, required skills…"
+          placeholder="Paste the job description — role, responsibilities, required skills…"
           rows={10}
-          className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+          style={{
+            width: "100%",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            color: "var(--text)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "12px",
+            lineHeight: 1.8,
+            padding: "16px",
+            resize: "none",
+            outline: "none",
+            transition: "border-color 0.2s, box-shadow 0.2s",
+            borderRadius: 0,
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "var(--accent)";
+            e.currentTarget.style.boxShadow =
+              "0 0 0 1px rgba(196, 148, 74, 0.12)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "var(--border)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         />
 
-        <div className="flex items-center gap-3">
-          <label className="text-sm text-gray-500 shrink-0">Show top</label>
+        {/* Controls row */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <label
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              color: "var(--text-muted)",
+            }}
+          >
+            Show top
+          </label>
           <input
             type="number"
             min={1}
@@ -196,9 +519,33 @@ export function RankPage() {
             onChange={(e) =>
               setTopK(Math.max(1, Math.min(50, parseInt(e.target.value) || 10)))
             }
-            className="w-16 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            style={{
+              width: "56px",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              color: "var(--text)",
+              fontFamily: "var(--font-mono)",
+              fontSize: "12px",
+              padding: "8px",
+              textAlign: "center",
+              outline: "none",
+              borderRadius: 0,
+            }}
+            onFocus={(e) =>
+              (e.currentTarget.style.borderColor = "var(--accent)")
+            }
+            onBlur={(e) =>
+              (e.currentTarget.style.borderColor = "var(--border)")
+            }
           />
-          <label className="text-sm text-gray-500 shrink-0 mr-auto">
+          <label
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              color: "var(--text-muted)",
+              flex: 1,
+            }}
+          >
             candidates
           </label>
 
@@ -210,20 +557,51 @@ export function RankPage() {
                 ? "Pipeline still active — results may be incomplete"
                 : undefined
             }
-            className={[
-              "px-6 py-2 text-sm rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-              isProcessing
-                ? "bg-amber-500 hover:bg-amber-600 text-white"
-                : "bg-indigo-600 hover:bg-indigo-700 text-white",
-            ].join(" ")}
+            style={{
+              padding: "12px 28px",
+              background:
+                !jdText.trim() || isPending
+                  ? "var(--surface-2)"
+                  : isProcessing
+                    ? "var(--amber-dim)"
+                    : "var(--accent)",
+              color:
+                !jdText.trim() || isPending
+                  ? "var(--text-muted)"
+                  : isProcessing
+                    ? "var(--accent)"
+                    : "var(--bg)",
+              border: isProcessing ? "1px solid rgba(196,148,74,0.25)" : "none",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              cursor: !jdText.trim() || isPending ? "not-allowed" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              transition: "background 0.2s, color 0.2s",
+              borderRadius: 0,
+            }}
           >
             {isPending ? (
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <>
+                <span
+                  className="spin"
+                  style={{
+                    width: "11px",
+                    height: "11px",
+                    border: "1px solid var(--text-muted)",
+                    borderTopColor: "transparent",
+                    borderRadius: "50%",
+                    display: "inline-block",
+                    flexShrink: 0,
+                  }}
+                />
                 Ranking…
-              </span>
+              </>
             ) : isProcessing ? (
-              "Rank (pipeline active ⚠)"
+              "⚠ Rank anyway"
             ) : (
               "Find Top Candidates"
             )}
@@ -233,41 +611,85 @@ export function RankPage() {
 
       {/* Error */}
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+        <div
+          style={{
+            padding: "14px 16px",
+            background: "var(--red-dim)",
+            border: "1px solid rgba(138, 77, 77, 0.2)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "12px",
+            color: "var(--red)",
+          }}
+        >
           {error.message}
         </div>
       )}
 
-      {/* Loading placeholder */}
+      {/* Skeleton */}
       {isPending && (
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="bg-white border border-gray-200 rounded-xl p-5 animate-pulse"
-            >
-              <div className="flex gap-4">
-                <div className="w-14 h-14 bg-gray-100 rounded-full" />
-                <div className="flex-1 space-y-2 pt-1">
-                  <div className="h-4 bg-gray-100 rounded w-1/3" />
-                  <div className="h-3 bg-gray-100 rounded w-1/4" />
-                </div>
-              </div>
-            </div>
+              className="skeleton-pulse"
+              style={{
+                height: "148px",
+                borderLeft: "2px solid var(--border)",
+              }}
+            />
           ))}
         </div>
       )}
 
       {/* Results */}
       {data && !isPending && (
-        <div className="space-y-3">
-          <p className="text-sm text-gray-400">
-            Showing {data.results.length} of {data.total_ranked} ranked
-            candidates
-          </p>
-          {data.results.map((c) => (
-            <CandidateCard key={c.candidate_id} candidate={c} />
-          ))}
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "10px 0",
+              borderBottom: "1px solid var(--border)",
+              marginBottom: "1px",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "var(--text-muted)",
+              }}
+            >
+              {data.total_ranked} candidates ranked
+            </span>
+          </div>
+
+          <div>
+            {data.results.map((candidate, i) => (
+              <CandidateCard
+                key={candidate.candidate_id}
+                candidate={candidate}
+                index={i}
+              />
+            ))}
+          </div>
+
+          {data.results.length === 0 && (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "48px",
+                fontFamily: "var(--font-mono)",
+                fontSize: "12px",
+                color: "var(--text-muted)",
+              }}
+            >
+              No candidates found matching this description.
+            </div>
+          )}
         </div>
       )}
     </div>

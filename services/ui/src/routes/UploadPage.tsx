@@ -11,11 +11,22 @@ interface FileEntry {
   error?: string;
 }
 
-const statusStyles: Record<UploadStatus, { label: string; cls: string }> = {
-  idle: { label: "Queued", cls: "bg-gray-100 text-gray-600" },
-  uploading: { label: "Uploading…", cls: "bg-blue-100 text-blue-600" },
-  done: { label: "✓ Accepted", cls: "bg-green-100 text-green-700" },
-  error: { label: "✗ Failed", cls: "bg-red-100 text-red-700" },
+const STATUS_CONFIG: Record<
+  UploadStatus,
+  { label: string; color: string; dot: string }
+> = {
+  idle: {
+    label: "QUEUED",
+    color: "var(--text-muted)",
+    dot: "var(--border)",
+  },
+  uploading: {
+    label: "UPLOADING",
+    color: "var(--accent)",
+    dot: "var(--accent)",
+  },
+  done: { label: "ACCEPTED", color: "var(--green)", dot: "var(--green)" },
+  error: { label: "FAILED", color: "var(--red)", dot: "var(--red)" },
 };
 
 function FileRow({
@@ -25,28 +36,111 @@ function FileRow({
   entry: FileEntry;
   onRemove: () => void;
 }) {
-  const s = statusStyles[entry.status];
+  const s = STATUS_CONFIG[entry.status];
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-lg">
-      <span className="text-gray-300 text-lg">📎</span>
-      <span className="flex-1 text-sm text-gray-800 truncate">
+    <div
+      className="anim-fade-up"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        padding: "11px 16px",
+        borderBottom: "1px solid var(--border)",
+      }}
+    >
+      {/* Status dot */}
+      <span
+        className={entry.status === "uploading" ? "pulse-dot" : ""}
+        style={{
+          width: "6px",
+          height: "6px",
+          borderRadius: "50%",
+          background: s.dot,
+          flexShrink: 0,
+          display: "inline-block",
+          transition: "background 0.2s",
+        }}
+      />
+
+      {/* Filename */}
+      <span
+        style={{
+          flex: 1,
+          fontFamily: "var(--font-mono)",
+          fontSize: "12px",
+          color: entry.status === "done" ? "var(--text-muted)" : "var(--text)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          textDecoration: entry.status === "done" ? "line-through" : "none",
+          textDecorationColor: "var(--border)",
+        }}
+      >
         {entry.file.name}
       </span>
-      <span className="text-xs text-gray-400 shrink-0">
-        {(entry.file.size / 1024).toFixed(0)} KB
-      </span>
+
+      {/* File size */}
       <span
-        className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${s.cls}`}
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "11px",
+          color: "var(--text-muted)",
+          flexShrink: 0,
+        }}
       >
+        {(entry.file.size / 1024).toFixed(0)} kb
+      </span>
+
+      {/* Status label */}
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
+          letterSpacing: "0.1em",
+          color: s.color,
+          flexShrink: 0,
+          minWidth: "76px",
+          textAlign: "right",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: "6px",
+        }}
+      >
+        {entry.status === "uploading" && (
+          <span
+            className="spin"
+            style={{
+              display: "inline-block",
+              width: "10px",
+              height: "10px",
+              border: "1px solid var(--accent)",
+              borderTopColor: "transparent",
+              borderRadius: "50%",
+              flexShrink: 0,
+            }}
+          />
+        )}
         {s.label}
       </span>
-      {entry.status === "uploading" && (
-        <span className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
-      )}
+
+      {/* Remove button */}
       {(entry.status === "idle" || entry.status === "error") && (
         <button
           onClick={onRemove}
-          className="text-gray-300 hover:text-gray-500 text-xl leading-none shrink-0"
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--border)",
+            cursor: "pointer",
+            fontSize: "18px",
+            lineHeight: 1,
+            padding: "0 0 0 4px",
+            flexShrink: 0,
+            transition: "color 0.15s",
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.color = "var(--red)")}
+          onMouseOut={(e) => (e.currentTarget.style.color = "var(--border)")}
         >
           ×
         </button>
@@ -127,7 +221,36 @@ export function UploadPage() {
   const isUploading = entries.some((e) => e.status === "uploading");
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: "36px" }}>
+      {/* Section header */}
+      <div className="anim-fade-up">
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "28px",
+            fontWeight: 300,
+            fontStyle: "italic",
+            color: "var(--text)",
+            margin: "0 0 6px",
+            lineHeight: 1.2,
+          }}
+        >
+          Upload Resumes
+        </h2>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            letterSpacing: "0.04em",
+            color: "var(--text-muted)",
+            margin: 0,
+          }}
+        >
+          PDF &amp; DOCX accepted · GPT-4o extraction runs in background (30–60s
+          per file)
+        </p>
+      </div>
+
       {/* Drop zone */}
       <div
         onDragOver={(e) => {
@@ -137,62 +260,133 @@ export function UploadPage() {
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
-        className={[
-          "border-2 border-dashed rounded-xl p-14 text-center cursor-pointer transition-colors select-none",
-          isDragging
-            ? "border-indigo-400 bg-indigo-50"
-            : "border-gray-300 hover:border-indigo-300 hover:bg-gray-50",
-        ].join(" ")}
+        style={{
+          border: `1px dashed ${isDragging ? "var(--accent)" : "var(--border)"}`,
+          background: isDragging ? "var(--accent-glow)" : "var(--surface)",
+          padding: "60px 32px",
+          textAlign: "center",
+          cursor: "pointer",
+          transition: "border-color 0.2s, background 0.2s",
+          position: "relative",
+          overflow: "hidden",
+        }}
       >
+        {isDragging && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              boxShadow: "inset 0 0 60px rgba(196, 148, 74, 0.07)",
+              pointerEvents: "none",
+            }}
+          />
+        )}
         <input
           ref={inputRef}
           type="file"
           multiple
           accept=".pdf,.docx"
-          className="hidden"
+          style={{ display: "none" }}
           onChange={(e) => e.target.files && addFiles(e.target.files)}
         />
-        <div className="text-4xl mb-3">📄</div>
-        <p className="text-gray-700 font-medium">
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "28px",
+            color: isDragging ? "var(--accent)" : "var(--text-muted)",
+            lineHeight: 1,
+            marginBottom: "16px",
+            transition: "color 0.2s",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          ↓
+        </div>
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "13px",
+            color: isDragging ? "var(--accent)" : "var(--text)",
+            margin: "0 0 6px",
+            transition: "color 0.2s",
+          }}
+        >
           Drop resumes here or click to select
         </p>
-        <p className="text-gray-400 text-sm mt-1">
-          PDF or DOCX · multiple files supported
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            color: "var(--text-muted)",
+            margin: 0,
+            letterSpacing: "0.04em",
+          }}
+        >
+          PDF · DOCX · Multiple files supported
         </p>
       </div>
 
       {/* File list */}
       {entries.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">
+        <div
+          className="anim-fade-up"
+          style={{ border: "1px solid var(--border)" }}
+        >
+          {/* List header */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "10px 16px",
+              borderBottom: "1px solid var(--border)",
+              background: "var(--surface)",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--text-muted)",
+              }}
+            >
               {entries.length} file{entries.length !== 1 ? "s" : ""} ·{" "}
               {doneCount} accepted
             </span>
             <button
               onClick={() => setEntries([])}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              style={{
+                background: "none",
+                border: "none",
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--text-muted)",
+                cursor: "pointer",
+                transition: "color 0.15s",
+              }}
+              onMouseOver={(e) => (e.currentTarget.style.color = "var(--text)")}
+              onMouseOut={(e) =>
+                (e.currentTarget.style.color = "var(--text-muted)")
+              }
             >
               Clear all
             </button>
           </div>
-          <div className="space-y-1.5">
-            {entries.map((entry) => (
-              <FileRow
-                key={entry.id}
-                entry={entry}
-                onRemove={() =>
-                  setEntries((prev) => prev.filter((e) => e.id !== entry.id))
-                }
-              />
-            ))}
-          </div>
-          {pendingCount > 0 && (
-            <p className="text-xs text-gray-400">
-              Files are accepted immediately — GPT-4o extraction runs in the
-              background (30–60s per file).
-            </p>
-          )}
+
+          {/* File rows */}
+          {entries.map((entry) => (
+            <FileRow
+              key={entry.id}
+              entry={entry}
+              onRemove={() =>
+                setEntries((prev) => prev.filter((e) => e.id !== entry.id))
+              }
+            />
+          ))}
         </div>
       )}
 
@@ -201,20 +395,52 @@ export function UploadPage() {
         <button
           onClick={handleUploadAll}
           disabled={isUploading}
-          className="w-full py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          style={{
+            width: "100%",
+            padding: "16px",
+            background: isUploading ? "var(--surface-2)" : "var(--accent)",
+            color: isUploading ? "var(--text-muted)" : "var(--bg)",
+            border: "none",
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            cursor: isUploading ? "not-allowed" : "pointer",
+            transition: "background 0.2s, color 0.2s",
+          }}
         >
           {isUploading
             ? "Uploading…"
-            : `Upload ${pendingCount} resume${pendingCount !== 1 ? "s" : ""}`}
+            : `Upload ${pendingCount} Resume${pendingCount !== 1 ? "s" : ""}`}
         </button>
       )}
 
-      {/* Candidate count badge */}
+      {/* Candidate count */}
       {candidatesData && (
-        <div className="flex items-center gap-2 text-sm text-gray-500 pt-2 border-t border-gray-100">
-          <span className="w-2 h-2 bg-green-400 rounded-full" />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "14px 0 0",
+            borderTop: "1px solid var(--border)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            color: "var(--text-muted)",
+          }}
+        >
+          <span
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: "var(--green)",
+              flexShrink: 0,
+              display: "inline-block",
+            }}
+          />
           {candidatesData.total} candidate
-          {candidatesData.total !== 1 ? "s" : ""} in the database
+          {candidatesData.total !== 1 ? "s" : ""} indexed
         </div>
       )}
     </div>
