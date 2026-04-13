@@ -1,0 +1,146 @@
+services:
+  # ─── PostgreSQL 18 + pgvector ───────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg18
+    restart: always
+    env_file:
+      - .env.local
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-talent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-talent_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-talent_intelligence}
+      TZ: UTC
+    ports:
+      - "5420:5432"
+    volumes:
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d
+      # pg18+ stores data in a major-version subdirectory under /var/lib/postgresql
+      # Mount the parent so pg_upgrade --link works across upgrades without crossing mount boundaries
+      - ./infra/postgres/data:/var/lib/postgresql
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - talent_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talent -d talent_intelligence"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── LocalStack (S3 + SQS + Lambda) ────────────────────────────────────────
+  localstack:
+    image: localstack/localstack:latest
+    restart: always
+    env_file:
+      - .env.local
+    environment:
+      - SERVICES=s3,sqs,lambda,iam,logs
+      - DEBUG=0
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      # AWS_DEFAULT_REGION + LOCALSTACK_AUTH_TOKEN sourced from env_file
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./infra/localstack/init:/etc/localstack/init/ready.d
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./infra/localstack/data:/var/lib/localstack
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - talent_network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'curl -sf http://localhost:4566/_localstack/health | grep -E "\"s3\": \"(running|available)\""',
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ─── CDK bootstrap for LocalStack ──────────────────────────────────────────
+  # Runs `cdklocal deploy` once LocalStack is healthy, then exits.
+  # NOTE: infra/cdk must be populated before this service is useful.
+  # Until the CDK stack is authored, AWS resources are created by
+  # infra/localstack/init/01_resources.sh (ready.d hook).
+  cdk-deploy:
+    image: node:22-alpine
+    working_dir: /app
+    command: >
+      sh -c "npm ci --silent &&
+             npx cdklocal bootstrap &&
+             npx cdklocal deploy --require-approval never"
+    env_file:
+      - .env.local
+    environment:
+      # Override: use Docker-internal LocalStack endpoint instead of localhost
+      - AWS_ENDPOINT_URL=http://localstack:4566
+    volumes:
+      - ./infra/cdk:/app
+    networks:
+      - talent_network
+    depends_on:
+      localstack:
+        condition: service_healthy
+    restart: "no"
+    profiles:
+      - cdk # only starts when: docker compose --profile cdk up
+
+  # ─── Python Processor (FastAPI + SQS poller) ────────────────────────────────
+  processor:
+    build:
+      context: ./services/processor
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env.local
+    environment:
+      # Override .env.local: use Docker-internal service hostnames instead of localhost
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-talent}:${POSTGRES_PASSWORD:-talent_secret}@postgres:5432/${POSTGRES_DB:-talent_intelligence}
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - SQS_QUEUE_URL=http://localstack:4566/000000000000/document-processing-queue
+    ports:
+      - "${PROCESSOR_PORT:-8000}:8000"
+    volumes:
+      - ./data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - talent_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+
+  # ─── Node.js / TypeScript API ───────────────────────────────────────────────
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env.local
+    environment:
+      # Override .env.local: use Docker-internal service hostnames instead of localhost
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - SQS_QUEUE_URL=http://localstack:4566/000000000000/document-processing-queue
+      - PROCESSOR_URL=http://processor:8000
+    ports:
+      - "${API_PORT:-3000}:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - talent_network
+    depends_on:
+      processor:
+        condition: service_started
+
+networks:
+  talent_network:
+    ipam:
+      driver: default

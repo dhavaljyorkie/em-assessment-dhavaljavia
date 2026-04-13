@@ -1,0 +1,58 @@
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ── Node.js ───────────────────────────────────────────────────────────────────
+**/node_modules/
+**/dist/
+**/.next/
+**/build/
+**/.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+**/__pycache__/
+**/*.py[cod]
+**/*.pyo
+**/.venv/
+**/venv/
+**/env/
+**/.env/
+**/*.egg-info/
+**/dist/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/*.log
+
+# ── Docker / LocalStack / Postgres data ──────────────────────────────────────
+infra/localstack/data/
+infra/localstack/init/*.sh.bak
+infra/postgres/data/
+
+# ── AWS CDK ───────────────────────────────────────────────────────────────────
+infra/cdk/cdk.out/
+infra/cdk/node_modules/
+
+# ── Data directories (sample inputs go in data/ but not large files) ──────────
+data/chroma/
+data/*.db
+data/*.sqlite
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
