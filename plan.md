@@ -163,14 +163,15 @@ RANKING FLOW
 - [x] `src/ranking/engine.py` — `rank(session, jd_text, top_k) → List[RankedCandidate]`; two-stage: pgvector ANN → GPT-4o score → top-k
 - [x] `main.py` — FastAPI endpoints: `POST /ingest`, `POST /rank`, `GET /candidates`, `GET /health`
 
-### Phase 5 — Node.js / TypeScript API
+### Phase 5 — Node.js / TypeScript API _(complete)_
 
-- [ ] `src/lib/s3.ts` — AWS SDK v3 S3 client with LocalStack `endpoint`
-- [ ] `src/lib/sqs.ts` — AWS SDK v3 SQS client
-- [ ] `src/lib/pythonClient.ts` — axios client for Python FastAPI
-- [ ] `src/routes/candidates.ts` — `POST /api/candidates/upload` → S3 + SQS → `202 Accepted`
-- [ ] `src/routes/jobs.ts` — `POST /api/jobs/rank` → Python `/rank` → top 10 response
-- [ ] `src/index.ts` — Express app, routes, error middleware
+- [x] `src/lib/s3.ts` — AWS SDK v3 S3 client; `forcePathStyle` for LocalStack; `AWS_ENDPOINT_URL` switches between LocalStack and real AWS
+- [x] `src/lib/sqs.ts` — AWS SDK v3 SQS client; `publishIngestMessage({bucket, key})`
+- [x] `src/lib/pythonClient.ts` — axios client to Python FastAPI; `rankCandidates()`, `healthCheck()`
+- [x] `src/middleware/upload.ts` — multer memory storage; PDF + DOCX whitelist; 10 MB limit
+- [x] `src/routes/candidates.ts` — `POST /api/candidates/upload` → S3 + SQS → `202 Accepted`
+- [x] `src/routes/jobs.ts` — `POST /api/jobs/rank` → proxies to Python `/rank` → top-10 response
+- [x] `src/index.ts` — Express app, routes, 404, global error handler; TypeScript compiles clean
 
 ### Phase 6 — DESIGN.md
 

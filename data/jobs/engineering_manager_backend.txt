@@ -1,0 +1,30 @@
+Engineering Manager — Backend Infrastructure
+
+About the Role
+We are looking for an experienced Engineering Manager to lead our Backend Infrastructure team of 8–12 engineers. You will drive technical strategy, grow the team, and ensure reliable delivery of the systems that power our product.
+
+Responsibilities
+- Lead and grow a high-performing team of backend engineers
+- Own the technical roadmap for backend infrastructure services
+- Partner with Product and Design on feature delivery
+- Drive engineering best practices: code review, testing, on-call culture
+- Hire, mentor, and retain senior engineers
+- Manage performance and career growth of direct reports
+- Communicate progress, risks, and trade-offs to senior leadership
+
+Required Skills & Experience
+- 3+ years in an Engineering Manager or Tech Lead role
+- 7+ years of software engineering experience
+- Strong backend engineering background (Python, Go, or Java)
+- Experience with distributed systems and cloud infrastructure (AWS preferred)
+- Proven ability to hire and retain senior engineers
+- Track record of shipping high-quality, high-scale software
+- Strong written and verbal communication
+
+Nice to Have
+- Experience with ML infrastructure or data pipelines
+- Exposure to event-driven architectures (Kafka, SQS)
+- Startup and scale-up experience
+- Experience with Kubernetes or container orchestration
+
+We offer competitive compensation, remote-friendly working, and a strong engineering culture.
