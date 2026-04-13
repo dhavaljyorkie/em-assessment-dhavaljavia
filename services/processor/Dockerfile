@@ -15,5 +15,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Run Alembic migrations then start FastAPI via uvicorn
-CMD ["sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port ${PROCESSOR_PORT:-8000}"]
+# Run Alembic migrations then start in the appropriate mode:
+#   WORKER_MODE=true  → SQS poller (lambda_handler.run_worker)
+#   WORKER_MODE=false → FastAPI via uvicorn (default)
+CMD ["sh", "-c", "\
+  alembic upgrade head && \
+  if [ \"$WORKER_MODE\" = 'true' ]; then \
+    python lambda_handler.py; \
+  else \
+    uvicorn main:app --host 0.0.0.0 --port ${PROCESSOR_PORT:-8000}; \
+  fi \
+"]

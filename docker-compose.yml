@@ -90,7 +90,7 @@ services:
     profiles:
       - cdk # only starts when: docker compose --profile cdk up
 
-  # ─── Python Processor (FastAPI + SQS poller) ────────────────────────────────
+  # ─── Python Processor (FastAPI API) ─────────────────────────────────────────
   processor:
     build:
       context: ./services/processor
@@ -99,12 +99,37 @@ services:
     env_file:
       - .env.local
     environment:
-      # Override .env.local: use Docker-internal service hostnames instead of localhost
       - DATABASE_URL=postgresql://${POSTGRES_USER:-talent}:${POSTGRES_PASSWORD:-talent_secret}@postgres:5432/${POSTGRES_DB:-talent_intelligence}
       - AWS_ENDPOINT_URL=http://localstack:4566
       - SQS_QUEUE_URL=http://localstack:4566/000000000000/document-processing-queue
+      - WORKER_MODE=false
     ports:
       - "${PROCESSOR_PORT:-8000}:8000"
+    volumes:
+      - ./data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - talent_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+
+  # ─── SQS Worker (document ingestion poller) ──────────────────────────────────
+  worker:
+    build:
+      context: ./services/processor
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env.local
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-talent}:${POSTGRES_PASSWORD:-talent_secret}@postgres:5432/${POSTGRES_DB:-talent_intelligence}
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - SQS_QUEUE_URL=http://localstack:4566/000000000000/document-processing-queue
+      - WORKER_MODE=true
     volumes:
       - ./data:/app/data
     extra_hosts:

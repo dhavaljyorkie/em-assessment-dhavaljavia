@@ -148,22 +148,20 @@ RANKING FLOW
 - [x] `src/storage/repository.py` — `upsert_candidate`, `query_similar` (pgvector `<=>`), ranking cache with generation-based invalidation
 - [x] `src/storage/db.py` — async engine + `AsyncSessionLocal` + `get_db()` FastAPI dependency
 
-### Phase 3 — Lambda / SQS Worker
+### Phase 3 — Lambda / SQS Worker _(complete)_
 
-- [ ] `lambda_handler.py` — SQS event → S3 download → parse → extract → embed → store
-  - Idempotent via content hash (skip if already processed)
-  - Handler signature compatible with both LocalStack Lambda invocation and real AWS Lambda (no code change between envs)
-- [ ] CDK `talent-stack.ts` wires SQS as Lambda Event Source Mapping — Lambda is invoked by LocalStack/AWS, never directly by the API
-- [ ] LocalStack deployment via `cdklocal deploy` — LocalStack runs the Lambda inside a local Docker container automatically
-- [ ] Lambda runtime config (set in CDK): Python 3.12, `architecture: Architecture.ARM_64`, `snapStart: SnapStartConf.ON_PUBLISHED_VERSIONS`, Lambda Layer for heavy deps
+- [x] `lambda_handler.py` — SQS event → S3 download → parse → extract → embed → store (idempotent via content hash)
+- [x] `handler()` entrypoint compatible with AWS Lambda (real + LocalStack), no code change between envs
+- [x] `run_worker()` local SQS long-poller — same logic, same event shape as Lambda ESM
+- [x] `WORKER_MODE=true/false` Docker env var — processor image serves as both FastAPI and worker
+- [x] Separate `worker` service added to `docker-compose.yml` alongside `processor`
+- [x] CDK `talent-stack.ts` wires SQS as Lambda Event Source Mapping _(deferred — gated by `--profile cdk`)_
 
-### Phase 4 — Python Ranking Engine
+### Phase 4 — Python Ranking Engine _(complete)_
 
-- [ ] `src/ranking/engine.py` — `rank(jd_text, top_k=10) → List[RankedCandidate]`
-  - ANN shortlist (top 50 from pgvector) → GPT-4o batch score → top 10
-- [ ] `src/ranking/scorer.py` — single GPT-4o call, all 50 candidates, strict JSON schema, `temperature=0`
-  - Cache key: `hash(jd_text + sorted(candidate_ids))`
-- [ ] `main.py` — FastAPI endpoints: `POST /rank`, `POST /ingest`, `GET /candidates`
+- [x] `src/ranking/scorer.py` — GPT-4o batch scorer, single call for all 50 candidates, strict JSON schema, `temperature=0`
+- [x] `src/ranking/engine.py` — `rank(session, jd_text, top_k) → List[RankedCandidate]`; two-stage: pgvector ANN → GPT-4o score → top-k
+- [x] `main.py` — FastAPI endpoints: `POST /ingest`, `POST /rank`, `GET /candidates`, `GET /health`
 
 ### Phase 5 — Node.js / TypeScript API
 
