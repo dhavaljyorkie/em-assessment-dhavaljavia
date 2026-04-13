@@ -10,22 +10,22 @@ Parses PDF/DOCX resumes → extracts structured profiles via GPT-4o → stores e
 ### Rank tab — Engineering Manager JD
 
 Maria Santos ranked #1 (score 90) — management experience + Python/Java/AWS
-![EM ranking](docs/screenshots/Screenshot%202026-04-13%20at%2012.13.35%20PM.png)
+![EM ranking](docs/screenshots/Screenshot%202026-04-13%20at%2012.13.35%E2%80%AFPM.png)
 
 ### Rank tab — Senior iOS Engineer JD
 
 Yuki Tanaka ranked #1 (score 90) — Swift, SwiftUI, ARKit, Airbnb/Pinterest pedigree
-![iOS ranking](docs/screenshots/Screenshot%202026-04-13%20at%2012.14.37%20PM.png)
+![iOS ranking](docs/screenshots/Screenshot%202026-04-13%20at%2012.14.37%E2%80%AFPM.png)
 
 ### Rank tab — Staff Security Engineer JD (top 10)
 
 James Park ranked #1 (score 95) — SAST/DAST, OWASP, SOC2, ISO 27001
-![Security ranking top 10](docs/screenshots/Screenshot%202026-04-13%20at%2012.15.21%20PM.png)
+![Security ranking top 10](docs/screenshots/Screenshot%202026-04-13%20at%2012.15.21%E2%80%AFPM.png)
 
 ### Rank tab — Staff Security Engineer JD (top 5)
 
 Same JD narrowed to 5 candidates — James Park #1, Elena Volkov #2
-![Security ranking top 5](docs/screenshots/Screenshot%202026-04-13%20at%2012.16.11%20PM.png)
+![Security ranking top 5](docs/screenshots/Screenshot%202026-04-13%20at%2012.16.11%E2%80%AFPM.png)
 
 ---
 
